@@ -1,8 +1,10 @@
 #!/bin/bash
 
 ## Create a file/directory framework for Ansible use.
+
+force="false"
 root_dir=`pwd`
-roles_subdir="role_based/roles"
+roles_subdir="roles"
 
 echo_error()
 {
@@ -21,8 +23,11 @@ init_base()
 
     if [ -d "$root_dir" ]
     then
-        echo_error "Root directory $root_dir already exists and will not be overwritten.\n"
-        exit 1
+        if [ "$force" != "true" ]
+        then
+            echo_error "Root directory $root_dir already exists and will not be overwritten.\n"
+            exit 1
+        fi
     else
         echo_info "Creating root directory $root_dir\n"
         mkdir -p $root_dir
@@ -30,14 +35,18 @@ init_base()
 
     cd $root_dir
 
-    ## Create empty hosts file
-    touch hosts
+    ## Create empty staging and production hosts file
+    touch staging
+    touch production
 
     ## Create group variables directory
-    mkdir group_vars
+    mkdir -p group_vars
 
     ## Create host variables directory
-    mkdir host_vars
+    mkdir -p host_vars
+
+    ## Create a playbook directory
+    mkdir -p playbooks
 
     ## Create top-level role directory
     mkdir -p $roles_subdir
@@ -64,27 +73,30 @@ init_role()
 
     if [ -d "$role_name" ]
     then
-        echo_error "Error! A role named $role_name already exists. Cannot proceed.\n"
-        exit 1
+        if [ "$force" != "true" ]
+        then
+            echo_error "Error! A role named $role_name already exists. Cannot proceed.\n"
+            exit 1
+        fi
     fi
 
     echo_info "Creating role [$role_name]\n"
 
-    mkdir $role_name
+    mkdir -p $role_name
     cd $role_name
 
     ## Create files directory
-    mkdir files
+    mkdir -p files
 
     ## Create tasks directory and empty main task file
-    mkdir tasks
+    mkdir -p tasks
     touch tasks/main.yml
 
     ## Create templates directory
-    mkdir templates
+    mkdir -p templates
 
     ## Create variables directory and empty main variables file
-    mkdir vars
+    mkdir -p vars
     touch vars/main.yml
 
     popd > /dev/null 2>&1
@@ -97,11 +109,12 @@ Arguments:
  --root <root_dir>         : Specify optional root directory (defaults to current directory).
  -b/--base                 : Create base structure.
  -r/--role <name>          : Create skeleton for role named <name>.
+ --force                   : Forcibly overwrite existing targets.
 "
 }
 
 
-commandline_arguments=`getopt --options br: --longoptions root:,base,role: -- $*`
+commandline_arguments=`getopt --options br: --longoptions force,root:,base,role: -- $*`
 if [ $? != 0 ] || [ -z "$*" ]
 then
     showUsage
@@ -116,6 +129,9 @@ do
 
     case "$1" in
 
+        "--force" )
+            force="true"
+            ;;
         "--root" )
             root_dir=$2
             shift
