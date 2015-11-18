@@ -47,6 +47,10 @@ init_base()
 
     ## Create a playbook directory
     mkdir -p playbooks
+    pushd `pwd` > /dev/null 2>&1
+    cd playbooks
+    ln -sf ../$roles_subdir ./
+    popd > /dev/null 2>&1
 
     ## Create top-level role directory
     mkdir -p $roles_subdir
